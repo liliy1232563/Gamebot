@@ -10,7 +10,7 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 
-OWNER_ID = int(os.getenv("OWNER_ID", "0"))
+OWNER_ID = int(os.getenv("OWNER_ID", "6727651675"))
 
 BOT_NAME = os.getenv(
     "BOT_NAME",
@@ -38,12 +38,12 @@ SUPPORT_GROUP = os.getenv(
 
 OWNER_USERNAME = os.getenv(
     "OWNER_USERNAME",
-    "@senpain_jiro"
+    "@tg_Jiro"
 ).strip()
 
 OWNER_LINK = os.getenv(
     "OWNER_LINK",
-    "https://t.me/senpain_jiro"
+    "https://t.me/tg_jiro"
 ).strip()
 
 REPOSITORY_URL = os.getenv(
