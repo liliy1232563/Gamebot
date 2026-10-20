@@ -1,195 +1,196 @@
-import os
-from dotenv import load_dotenv
+import logging
+import importlib
 
-load_dotenv()
+from telegram import BotCommand
+from telegram.ext import Application
 
-
-# ============================================================
-# BASIC BOT SETTINGS
-# ============================================================
-
-BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
-
-OWNER_ID = int(os.getenv("OWNER_ID", "6727651675"))
-
-BOT_NAME = os.getenv(
-    "BOT_NAME",
-    "Solurix"
-).strip()
-
-BOT_USERNAME = os.getenv(
-    "BOT_USERNAME",
-    ""
-).strip()
-
-# ============================================================
-# BRANDING
-# ============================================================
-
-SUPPORT_CHANNEL = os.getenv(
-    "SUPPORT_CHANNEL",
-    "https://t.me/Solurix_bots"
-).strip()
-
-SUPPORT_GROUP = os.getenv(
-    "SUPPORT_GROUP",
-    "https://t.me/Solurix_Support_Group"
-).strip()
-
-OWNER_USERNAME = os.getenv(
-    "OWNER_USERNAME",
-    "@tg_Jiro"
-).strip()
-
-OWNER_LINK = os.getenv(
-    "OWNER_LINK",
-    "https://t.me/tg_jiro"
-).strip()
-
-REPOSITORY_URL = os.getenv(
-    "REPOSITORY_URL",
-    "https://github.com/lordjirosama/Gamebot"
-).strip()
-
-
-# ============================================================
-# DATABASE
-# ============================================================
-
-DB_PATH = os.getenv(
-    "DB_PATH",
-    "data/solurix.db"
-).strip()
-
-
-# ============================================================
-# IMAGES
-# ============================================================
-# Add Telegram file_id later.
-# Leave empty for now.
-
-START_IMAGE = os.getenv("START_IMAGE", "https://graph.org/file/0591ce5558c3ec8fe7612-263292508134daf3e1.jpg").strip()
-HELP_IMAGE = os.getenv("HELP_IMAGE", "https://graph.org/file/fdc4357abfaba23255e98-24d1bbfa3888cdfcfe.jpg").strip()
-PROFILE_IMAGE = os.getenv("PROFILE_IMAGE", "https://graph.org/file/0591ce5558c3ec8fe7612-263292508134daf3e1.jpg").strip()
-RANKING_IMAGE = os.getenv("RANKING_IMAGE", "https://graph.org/file/fdc4357abfaba23255e98-24d1bbfa3888cdfcfe.jpg").strip()
-BATTLE_IMAGE = os.getenv("BATTLE_IMAGE", "https://graph.org/file/0591ce5558c3ec8fe7612-263292508134daf3e1.jpg").strip()
-DAILY_IMAGE = os.getenv("DAILY_IMAGE", "https://graph.org/file/fdc4357abfaba23255e98-24d1bbfa3888cdfcfe.jpg").strip()
-SHOP_IMAGE = os.getenv("SHOP_IMAGE", "https://graph.org/file/0591ce5558c3ec8fe7612-263292508134daf3e1.jpg").strip()
-QUEST_IMAGE = os.getenv("QUEST_IMAGE", "https://graph.org/file/fdc4357abfaba23255e98-24d1bbfa3888cdfcfe.jpg").strip()
-EVENT_IMAGE = os.getenv("EVENT_IMAGE", "https://graph.org/file/0591ce5558c3ec8fe7612-263292508134daf3e1.jpg").strip()
-
-
-# ============================================================
-# GAME SETTINGS
-# ============================================================
-
-STARTING_COINS = int(
-    os.getenv("STARTING_COINS", "100")
+from config import (
+BOT_TOKEN,
+BOT_NAME,
+SET_COMMANDS,
 )
 
-STARTING_LEVEL = int(
-    os.getenv("STARTING_LEVEL", "1")
+============================================================
+
+LOGGING
+
+============================================================
+
+logging.basicConfig(
+format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+level=logging.INFO,
 )
 
-STARTING_XP = int(
-    os.getenv("STARTING_XP", "0")
+logger = logging.getLogger("solurix")
+
+============================================================
+
+TELEGRAM COMMAND MENU
+
+============================================================
+
+COMMANDS = [
+BotCommand("start", "Start Solurix"),
+BotCommand("help", "Show all commands"),
+BotCommand("profile", "View your profile"),
+BotCommand("stats", "View your statistics"),
+BotCommand("rank", "View group ranking"),
+BotCommand("daily", "Claim your daily reward"),
+BotCommand("weekly", "Claim your weekly reward"),
+BotCommand("battle", "Start a battle"),
+BotCommand("hunt", "Go on a hunt"),
+BotCommand("train", "Train your character"),
+BotCommand("explore", "Explore the world"),
+BotCommand("coins", "Check your coins"),
+BotCommand("level", "Check your level"),
+BotCommand("history", "View recent game activity"),
+BotCommand("support", "Open Solurix support"),
+]
+
+============================================================
+
+COMMAND SETUP
+
+============================================================
+
+async def setup_commands(application: Application) -> None:
+"""Register Telegram command suggestions."""
+
+if not SET_COMMANDS:
+    logger.info("Telegram command menu setup disabled.")
+    return
+
+await application.bot.set_my_commands(COMMANDS)
+
+logger.info(
+    "Telegram command menu configured for %s.",
+    BOT_NAME,
 )
 
-XP_PER_MESSAGE = int(
-    os.getenv("XP_PER_MESSAGE", "5")
+============================================================
+
+PLUGIN LOADER
+
+============================================================
+
+def load_plugins(application: Application) -> None:
+"""Import and register available plugins."""
+
+plugin_names = [
+    "start",
+    "help",
+    "game",
+    "profile",
+    "ranking",
+    "daily",
+    "weekly",
+    "battle",
+    "hunt",
+    "admin",
+    "auto_reply",
+    "coins",
+    "stats",
+    "level",
+    "history",
+    "explore",
+    "train",
+]
+
+loaded = 0
+failed = 0
+
+for plugin_name in plugin_names:
+    try:
+        module = importlib.import_module(
+            f"plugins.{plugin_name}"
+        )
+
+        setup = getattr(module, "setup", None)
+
+        if not callable(setup):
+            logger.warning(
+                "Plugin %s has no callable setup() function.",
+                plugin_name,
+            )
+            continue
+
+        setup(application)
+        loaded += 1
+
+        logger.info("Loaded plugin: %s", plugin_name)
+
+    except ModuleNotFoundError as exc:
+        # Skip only when the plugin itself is missing.
+        # Dependencies missing inside a plugin must be reported.
+        if exc.name in (
+            f"plugins.{plugin_name}",
+            "plugins",
+        ):
+            logger.warning(
+                "Plugin not found: %s",
+                plugin_name,
+            )
+        else:
+            failed += 1
+            logger.exception(
+                "Missing dependency while loading plugin %s: %s",
+                plugin_name,
+                exc.name,
+            )
+
+    except Exception:
+        failed += 1
+        logger.exception(
+            "Failed to load plugin: %s",
+            plugin_name,
+        )
+
+logger.info(
+    "Plugin loading finished: %s loaded, %s failed.",
+    loaded,
+    failed,
 )
 
-XP_COOLDOWN = int(
-    os.getenv("XP_COOLDOWN", "30")
-)
+============================================================
 
-DAILY_REWARD = int(
-    os.getenv("DAILY_REWARD", "100")
-)
+MAIN
 
-WEEKLY_REWARD = int(
-    os.getenv("WEEKLY_REWARD", "500")
-)
+============================================================
 
-
-# ============================================================
-# BATTLE SETTINGS
-# ============================================================
-
-BATTLE_COOLDOWN = int(
-    os.getenv("BATTLE_COOLDOWN", "30")
-)
-
-BATTLE_MIN_REWARD = int(
-    os.getenv("BATTLE_MIN_REWARD", "10")
-)
-
-BATTLE_MAX_REWARD = int(
-    os.getenv("BATTLE_MAX_REWARD", "100")
-)
-
-
-# ============================================================
-# HUNT SETTINGS
-# ============================================================
-
-HUNT_COOLDOWN = int(
-    os.getenv("HUNT_COOLDOWN", "60")
-)
-
-HUNT_MIN_REWARD = int(
-    os.getenv("HUNT_MIN_REWARD", "5")
-)
-
-HUNT_MAX_REWARD = int(
-    os.getenv("HUNT_MAX_REWARD", "75")
-)
-
-
-# ============================================================
-# AUTO REPLY
-# ============================================================
-
-AUTO_REPLY_ENABLED = os.getenv(
-    "AUTO_REPLY_ENABLED",
-    "True"
-).lower() in ("true", "1", "yes", "on")
-
-AUTO_REPLY_COOLDOWN = int(
-    os.getenv("AUTO_REPLY_COOLDOWN", "20")
-)
-
-
-# ============================================================
-# COMMAND SETTINGS
-# ============================================================
-
-SET_COMMANDS = os.getenv(
-    "SET_COMMANDS",
-    "True"
-).lower() in ("true", "1", "yes", "on")
-
-
-# ============================================================
-# LOGGING
-# ============================================================
-
-LOG_LEVEL = os.getenv(
-    "LOG_LEVEL",
-    "INFO"
-).upper()
-
-
-# ============================================================
-# VALIDATION
-# ============================================================
+def main() -> None:
+"""Build and run the Solurix Telegram bot."""
 
 if not BOT_TOKEN:
     raise RuntimeError(
-        "BOT_TOKEN is missing. Add BOT_TOKEN to your .env file."
+        "BOT_TOKEN is missing. Set it in the hosting environment."
     )
 
-if OWNER_ID <= 0:
-    raise RuntimeError(
-        "OWNER_ID is missing or invalid. Add your Telegram user ID to .env."
-    )
+logger.info("Starting %s...", BOT_NAME)
+
+application = (
+    Application.builder()
+    .token(BOT_TOKEN)
+    .post_init(setup_commands)
+    .build()
+)
+
+load_plugins(application)
+
+logger.info("Starting Telegram long polling...")
+
+application.run_polling()
+
+============================================================
+
+ENTRY POINT
+
+============================================================
+
+if name == "main":
+try:
+main()
+except KeyboardInterrupt:
+logger.info("Bot stopped manually.")
+except Exception:
+logger.exception("Bot startup or runtime failed.")
+raise
