@@ -53,19 +53,19 @@ BotCommand("support", "Open Solurix support"),
 
 #============================================================
 
+
 async def setup_commands(application: Application) -> None:
-"""Register Telegram command suggestions."""
+    """Register Telegram command suggestions."""
 
-if not SET_COMMANDS:
-    logger.info("Telegram command menu setup disabled.")
-    return
+    if not SET_COMMANDS:
+        logger.info("Telegram command menu setup disabled.")
+        return
 
-await application.bot.set_my_commands(COMMANDS)
+    await application.bot.set_my_commands(COMMANDS)
 
-logger.info(
-    "Telegram command menu configured for %s.",
-    BOT_NAME,
-)
+    logger.info(
+        "Telegram command menu configured for %s.",
+    )
 
 #============================================================
 
