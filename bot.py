@@ -14,7 +14,7 @@ SET_COMMANDS,
 
 LOGGING
 
-============================================================
+#============================================================
 
 logging.basicConfig(
 format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
